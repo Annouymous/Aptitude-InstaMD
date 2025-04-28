@@ -3,20 +3,24 @@ import { Questions } from "@/Question";
 import { useState, useEffect } from "react";
 
 export default function AptitudeTest() {
-  const [currentQuestion, setCurrentQuestion] = useState(() => {
-    const savedQuestion = localStorage.getItem("currentQuestion");
-    return savedQuestion ? parseInt(savedQuestion) : 0;
-  });
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [score, setScore] = useState(() => {
-    const savedScore = localStorage.getItem("score");
-    return savedScore ? parseInt(savedScore) : 0;
-  });
-  const [timer, setTimer] = useState(() => {
-    const savedTimer = localStorage.getItem("timer");
-    return savedTimer ? parseInt(savedTimer) : 45 * 60; // Default 45 minutes
-  });
-  const [isTestFinished, setIsTestFinished] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<any>(null);
+  const [score, setScore] = useState<number>(0);
+  const [timer, setTimer] = useState<number>(45 * 60); // Default 45 minutes
+  const [isTestFinished, setIsTestFinished] = useState<boolean>(false);
+
+  // Load from localStorage only on the client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedQuestion = localStorage.getItem("currentQuestion");
+      const savedScore = localStorage.getItem("score");
+      const savedTimer = localStorage.getItem("timer");
+
+      if (savedQuestion) setCurrentQuestion(parseInt(savedQuestion));
+      if (savedScore) setScore(parseInt(savedScore));
+      if (savedTimer) setTimer(parseInt(savedTimer));
+    }
+  }, []);
 
   // Timer countdown effect
   useEffect(() => {
@@ -29,7 +33,9 @@ export default function AptitudeTest() {
       if (timer > 0) {
         setTimer((prevTimer) => {
           const newTimer = prevTimer - 1;
-          localStorage.setItem("timer", newTimer); // Save updated timer to localStorage
+          if (typeof window !== "undefined") {
+            localStorage.setItem("timer", String(newTimer)); // Save updated timer to localStorage
+          }
           return newTimer;
         });
       }
@@ -38,10 +44,12 @@ export default function AptitudeTest() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Save progress to localStorage on changes
+  // Save current question and score to localStorage
   useEffect(() => {
-    localStorage.setItem("currentQuestion", currentQuestion);
-    localStorage.setItem("score", score);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentQuestion", String(currentQuestion));
+      localStorage.setItem("score", String(score));
+    }
   }, [currentQuestion, score]);
 
   const handleAnswerClick = (option: any) => {
@@ -66,7 +74,7 @@ export default function AptitudeTest() {
     }
   };
 
-  const formatTime = (time: any) => {
+  const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     return `${minutes < 10 ? "0" : ""}${minutes}:${
@@ -82,6 +90,12 @@ export default function AptitudeTest() {
     }
   };
 
+  useEffect(() => {
+    if (isTestFinished) {
+      handleTestCompletion();
+    }
+  }, [isTestFinished]);
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center py-8 px-4">
       {isTestFinished ? (
@@ -90,7 +104,6 @@ export default function AptitudeTest() {
           <p className="text-lg">
             Your Score: {score} / {Questions.length}
           </p>
-          {handleTestCompletion()} {/* Call the completion handler here */}
         </div>
       ) : (
         <>
@@ -109,7 +122,7 @@ export default function AptitudeTest() {
                 <button
                   key={index}
                   onClick={() => handleAnswerClick(option)}
-                  className={`w-full cursor-pointer  p-4 text-lg rounded-lg border-2 ${
+                  className={`w-full cursor-pointer p-4 text-lg rounded-lg border-2 ${
                     selectedAnswer === option
                       ? "bg-blue-500 text-white"
                       : "bg-gray-200 hover:bg-gray-300"
