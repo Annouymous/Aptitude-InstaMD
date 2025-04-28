@@ -44,7 +44,7 @@ export default function AptitudeTest() {
     localStorage.setItem("score", score);
   }, [currentQuestion, score]);
 
-  const handleAnswerClick = (option) => {
+  const handleAnswerClick = (option: any) => {
     setSelectedAnswer(option);
   };
 
@@ -66,7 +66,7 @@ export default function AptitudeTest() {
     }
   };
 
-  const formatTime = (time) => {
+  const formatTime = (time: any) => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     return `${minutes < 10 ? "0" : ""}${minutes}:${
