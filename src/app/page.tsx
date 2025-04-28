@@ -1,103 +1,139 @@
-import Image from "next/image";
+"use client";
+import { Questions } from "@/Question";
+import { useState, useEffect } from "react";
 
-export default function Home() {
+export default function AptitudeTest() {
+  const [currentQuestion, setCurrentQuestion] = useState(() => {
+    const savedQuestion = localStorage.getItem("currentQuestion");
+    return savedQuestion ? parseInt(savedQuestion) : 0;
+  });
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [score, setScore] = useState(() => {
+    const savedScore = localStorage.getItem("score");
+    return savedScore ? parseInt(savedScore) : 0;
+  });
+  const [timer, setTimer] = useState(() => {
+    const savedTimer = localStorage.getItem("timer");
+    return savedTimer ? parseInt(savedTimer) : 45 * 60; // Default 45 minutes
+  });
+  const [isTestFinished, setIsTestFinished] = useState(false);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (timer === 0) {
+      setIsTestFinished(true);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (timer > 0) {
+        setTimer((prevTimer) => {
+          const newTimer = prevTimer - 1;
+          localStorage.setItem("timer", newTimer); // Save updated timer to localStorage
+          return newTimer;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  // Save progress to localStorage on changes
+  useEffect(() => {
+    localStorage.setItem("currentQuestion", currentQuestion);
+    localStorage.setItem("score", score);
+  }, [currentQuestion, score]);
+
+  const handleAnswerClick = (option) => {
+    setSelectedAnswer(option);
+  };
+
+  const handleNextClick = () => {
+    if (!selectedAnswer) {
+      alert("Please select an answer before proceeding.");
+      return;
+    }
+
+    if (selectedAnswer === Questions[currentQuestion].correctOption) {
+      setScore(score + 1); // Correct answer, increment score
+    }
+
+    if (currentQuestion + 1 < Questions.length) {
+      setCurrentQuestion(currentQuestion + 1);
+      setSelectedAnswer(null); // Reset selected answer for next question
+    } else {
+      setIsTestFinished(true); // End test if it's the last question
+    }
+  };
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes < 10 ? "0" : ""}${minutes}:${
+      seconds < 10 ? "0" : ""
+    }${seconds}`;
+  };
+
+  const handleTestCompletion = () => {
+    if (score / Questions.length < 0.5) {
+      alert("You have failed the test. Better luck next time.");
+    } else {
+      alert("Congratulations! You have passed the test.");
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center py-8 px-4">
+      {isTestFinished ? (
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg text-center">
+          <h1 className="text-2xl font-semibold mb-4">Test Completed</h1>
+          <p className="text-lg">
+            Your Score: {score} / {Questions.length}
+          </p>
+          {handleTestCompletion()} {/* Call the completion handler here */}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        <>
+          <div className="bg-white mb-5 text-center p-8 rounded-lg shadow-lg w-full max-w-lg">
+            <div className="text-xl font-bold uppercase">
+              Time Left :{" "}
+              <span className="font-extrabold">{formatTime(timer)}</span>
+            </div>
+          </div>
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+            <h1 className="text-2xl font-semibold text-center mb-6">
+              Qs {currentQuestion + 1}: {Questions[currentQuestion].question}
+            </h1>
+            <div className="space-y-4">
+              {Questions[currentQuestion].options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswerClick(option)}
+                  className={`w-full cursor-pointer  p-4 text-lg rounded-lg border-2 ${
+                    selectedAnswer === option
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  } transition`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between w-full max-w-lg">
+            <button
+              onClick={handleNextClick}
+              disabled={!selectedAnswer} // Disable button if no answer is selected
+              className={`w-full bg-blue-500 text-white p-4 rounded-lg font-semibold hover:bg-blue-600 transition ${
+                !selectedAnswer ? "cursor-not-allowed opacity-50" : ""
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
